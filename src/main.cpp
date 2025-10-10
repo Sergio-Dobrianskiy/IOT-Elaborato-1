@@ -33,6 +33,7 @@ void printState(GameState gameState);
 static inline void turnOffAllLeds();
 void lcdOn();
 void lcdOff();
+String gen1234Str();
 
 /*************************************************
 *******************   DEFINE  ********************
@@ -120,6 +121,9 @@ void setup() {
 
   lsIsOn = false;
 
+  // usa una fonte "rumorosa" per non ripetere la sequenza ad ogni reset
+  randomSeed(analogRead(A0) ^ micros());
+
 }
 
 
@@ -128,7 +132,7 @@ void setup() {
 *************************************************/
 
 void loop() {
-  printState(gameState);  
+  // printState(gameState);  
 
   switch (gameState)
   {
@@ -191,8 +195,13 @@ void loop() {
   b4_state = digitalRead(BTN4);
   if (b4_state == HIGH) {
     digitalWrite(L4, HIGH);
-    gameState = GameState::BEGIN;
+    // gameState = GameState::BEGIN;
     Serial.println("BTN4");
+    String sequenza = gen1234Str();
+    Serial.println(sequenza);
+    printLCD("Sequenza", sequenza);
+    delay(30);
+    gameState = GameState::PLAY;
   } else {
     digitalWrite(L4, LOW);
   }
@@ -207,24 +216,36 @@ void loop() {
 ******************  FUNZIONI  ********************
 *************************************************/
 
-
+// Stampa sullo schermo LCD senza clear()
 void printLCD(String riga1, String riga2) {
-  // se una delle righe è vuota non stampo a schermo
-  if (riga1.length() > 0) {
-    lcd.setCursor(0, 0);
-    lcd.print(riga1);
+  const unsigned int maxLcdLen = 16;
+  char c;
+  uint32_t now = millis();
+  static uint32_t last = 0;
+
+  if (now - last < 100) return;   // piccolo throttle anti-flicker
+
+  lcd.setCursor(0, 0);
+  for (unsigned int i = 0; i < maxLcdLen; i++) {
+    c = (i < riga1.length()) ? riga1[i] : ' ';
+    lcd.write(c);
   }
-  if (riga2.length() > 0) {
-    lcd.setCursor(0, 1);
-    lcd.print(riga2);
+
+  lcd.setCursor(0, 1);
+  for (unsigned int i = 0; i < maxLcdLen; i++) {
+    c = (i < riga2.length()) ? riga2[i] : ' ';
+    lcd.write(c);
   }
+  last = now;
 }
 
+// controlla blink led rosso
 void blinky() {
   flagState = !flagState;
   digitalWrite(LS, flagState ? HIGH : LOW);
 }
 
+// inizia a lampeggiare
 void blinkOn(boolean& lson) {
   if (!lson) {
     lson = true;
@@ -233,6 +254,7 @@ void blinkOn(boolean& lson) {
   }
 }
 
+// smetti di lampeggiare
 void blinkOff(int led, boolean& lson) {
   if (lson) {
     lson = false;
@@ -240,13 +262,6 @@ void blinkOff(int led, boolean& lson) {
     digitalWrite(led, LOW);
   }
 }
-
-
-
-
-
-
-
 
 // ISR chiamata dal Timer1 a intervalli regolari
 void fadeISR() {
@@ -276,9 +291,7 @@ void applyFadeIfNeeded() {
   }
 }
 
-
-
-// Accende il “respiro”
+// Accende il fade
 void fadeOn(boolean &lson) {
   if (!lson) {
     lson = true;
@@ -288,13 +301,13 @@ void fadeOn(boolean &lson) {
     fadeStep   = 5;
 
     // Imposta la frequenza di aggiornamento del fade:
-    // 5000 µs = 5 ms → ~200 aggiornamenti al secondo (fluido)
+    // 5000 µs = 5 ms → ~200 aggiornamenti al secondo
     Timer1.initialize(5000);
     Timer1.attachInterrupt(fadeISR);
   }
 }
 
-// Ferma il “respiro” e spegne il LED
+// Ferma il fade e spegne il LED
 void fadeOff(int led, boolean &lson) {
   if (lson) {
     lson = false;
@@ -378,7 +391,7 @@ void deepSleep() {
   
 
   // anti-rientro: attendi rilascio BTN1 se ancora basso
-  delay(20);
+  delay(30);
   while (digitalRead(BTN1) == LOW) { /* wait */ }
   lcdOn();
 }
@@ -422,4 +435,23 @@ void lcdOn() {
 void lcdOff() {
   lcd.noDisplay();
   lcd.noBacklight();
+}
+
+String gen1234Str() {
+  uint8_t a[4] = {1, 2, 3, 4};
+
+  // Fisher–Yates shuffle
+  for (int i = 3; i > 0; --i) {
+    int j = random(i + 1); // 0..i
+    uint8_t t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+
+  char buf[5];
+  buf[0] = '0' + a[0];
+  buf[1] = '0' + a[1];
+  buf[2] = '0' + a[2];
+  buf[3] = '0' + a[3];
+  buf[4] = '\0';
+
+  return String(buf);
 }
