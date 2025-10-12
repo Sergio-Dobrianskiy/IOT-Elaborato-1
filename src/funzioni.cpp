@@ -89,3 +89,37 @@ String gen1234Str() {
 void wakeUpISR() {
   // Non fare nulla qui: basta che l’interrupt avvenga
 }
+
+
+int getLevel(int potPin) {
+    return (int) map(analogRead(potPin), 0, 1023, 1, 5);
+}
+
+
+// true se sono passati x secondi
+bool timer(unsigned long& last, unsigned long interval, bool debug=false) {
+    unsigned long now = millis();
+    unsigned long elapsed = (last == 0) ? 0UL : (now - last);
+
+
+    if (debug) {
+        Serial.print(F("[timer] elapsed="));
+        Serial.print(elapsed);
+        Serial.print(F(" ms / target="));
+        Serial.print(interval);
+        Serial.println(F(" ms"));
+    }
+    // Prima chiamata: armo il timer e non scatto subito
+    if (last == 0) { 
+        last = now; 
+        return false; 
+    }
+
+    // Controllo
+    if (now - last >= interval) {
+        last = 0;
+        if (debug) Serial.println(F("[timer] TRIGGER"));
+        return true;
+    }
+    return false;
+}

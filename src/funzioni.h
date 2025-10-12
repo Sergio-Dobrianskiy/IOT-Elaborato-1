@@ -31,8 +31,8 @@ inline void turnOffAllLeds();
 void lcdOn();
 void lcdOff();
 String gen1234Str();
-
-
+int getLevel(int potPin);
+bool timer(unsigned long& last, unsigned long interval, bool debug=false);
 
 
 

@@ -50,6 +50,7 @@ volatile bool tick       = false; // set da ISR → gestito nel loop
 // volatile forza il compilatore a rileggere il valore direttamente dalla memoria RAM ogni volta che serve (quindi in seguito agli interrupt il loop() vede subito le modifiche).
 volatile bool woke = false;  // opzionale, per sapere se c'è stato un wake
 
+unsigned long lastTimer = 0;
 
 
 /*************************************************
@@ -102,10 +103,11 @@ void loop() {
   case GameState::BEGIN:
     printLCD(lcd, "Welcome to TOS!", "Press B1 to Start");
     // Avvia lampeggio su LS (solo la prima volta)
-    // blinkOn(lsIsOn);
     fadeOn(lsIsOn);
     applyFadeIfNeeded();
-    
+    if (timer(lastTimer, 10'000UL, true)) { // sintassi 10'000UL permessa da C++14/17
+      gameState = GameState::SLEEP;
+    }
     
     break;
 
@@ -132,6 +134,8 @@ void loop() {
     digitalWrite(L1, HIGH);
     gameState = GameState::BEGIN;
     Serial.println("BTN1");
+    Serial.print("Livello partita: ");
+    Serial.println(getLevel(POT_PIN));
   } else {
     digitalWrite(L1, LOW);
     
@@ -178,6 +182,7 @@ void loop() {
 /*************************************************
 ******************  FUNZIONI  ********************
 *************************************************/
+
 
 
 
