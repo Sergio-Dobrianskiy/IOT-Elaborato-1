@@ -1,39 +1,4 @@
-#include <Arduino.h>
-#include "TimerOne.h"
-#include <avr/sleep.h>
-#include <avr/power.h>
-#include <avr/interrupt.h>
-
-#include <LiquidCrystal_I2C.h>
-
-/*************************************************
-*****************   PROTOTIPI  *******************
-*************************************************/
-// STATI
-enum class GameState {
-  BEGIN = 1,
-  PLAY,
-  SLEEP,
-  GAME_OVER
-};
-
-
-void printLCD(String riga1, String riga2);
-void blinky();
-void blinkOn(boolean& lson);
-void blinkOff(int led, boolean& lson);
-void fadeOff(int led, boolean &lson);
-void fadeISR();
-void applyFadeIfNeeded();
-void fadeOn(boolean &lson);
-void lightSleep();
-void wakeUpISR();
-void deepSleep();
-void printState(GameState gameState);
-static inline void turnOffAllLeds();
-void lcdOn();
-void lcdOff();
-String gen1234Str();
+#include "funzioni.h"
 
 /*************************************************
 *******************   DEFINE  ********************
@@ -56,15 +21,13 @@ String gen1234Str();
 // POTENZIOMETRO
 #define POT_PIN A0
 
-
-
 GameState gameState;  // dichiarata a livello globale
 
 /* Wiring: SDA => A4, SCL => A5 */
 /* I2C address of the LCD: 0x27 */
 /* Number of columns: 20 rows: 4 */
 
-LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,20,2);
+LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,16,2);
 int currentValue = 0;
 int newValue = 0;
 int b1_state;
@@ -137,7 +100,7 @@ void loop() {
   switch (gameState)
   {
   case GameState::BEGIN:
-    printLCD("Welcome to TOS!", "Press B1 to Start");
+    printLCD(lcd, "Welcome to TOS!", "Press B1 to Start");
     // Avvia lampeggio su LS (solo la prima volta)
     // blinkOn(lsIsOn);
     fadeOn(lsIsOn);
@@ -199,7 +162,7 @@ void loop() {
     Serial.println("BTN4");
     String sequenza = gen1234Str();
     Serial.println(sequenza);
-    printLCD("Sequenza", sequenza);
+    printLCD(lcd, "Sequenza", sequenza);
     delay(30);
     gameState = GameState::PLAY;
   } else {
@@ -216,28 +179,7 @@ void loop() {
 ******************  FUNZIONI  ********************
 *************************************************/
 
-// Stampa sullo schermo LCD senza clear()
-void printLCD(String riga1, String riga2) {
-  const unsigned int maxLcdLen = 16;
-  char c;
-  uint32_t now = millis();
-  static uint32_t last = 0;
 
-  if (now - last < 100) return;   // piccolo throttle anti-flicker
-
-  lcd.setCursor(0, 0);
-  for (unsigned int i = 0; i < maxLcdLen; i++) {
-    c = (i < riga1.length()) ? riga1[i] : ' ';
-    lcd.write(c);
-  }
-
-  lcd.setCursor(0, 1);
-  for (unsigned int i = 0; i < maxLcdLen; i++) {
-    c = (i < riga2.length()) ? riga2[i] : ' ';
-    lcd.write(c);
-  }
-  last = now;
-}
 
 // controlla blink led rosso
 void blinky() {
@@ -245,23 +187,6 @@ void blinky() {
   digitalWrite(LS, flagState ? HIGH : LOW);
 }
 
-// inizia a lampeggiare
-void blinkOn(boolean& lson) {
-  if (!lson) {
-    lson = true;
-    Timer1.initialize(500000);      // 0.5s → 2Hz
-    Timer1.attachInterrupt(blinky); // chiama ISR senza parametri
-  }
-}
-
-// smetti di lampeggiare
-void blinkOff(int led, boolean& lson) {
-  if (lson) {
-    lson = false;
-    Timer1.detachInterrupt(); // stop timer
-    digitalWrite(led, LOW);
-  }
-}
 
 // ISR chiamata dal Timer1 a intervalli regolari
 void fadeISR() {
@@ -333,10 +258,7 @@ void lightSleep(void) {
   power_all_enable();
 }
 
-// ISR di risveglio (vuota ma necessaria)
-void wakeUpISR() {
-  // Non fare nulla qui: basta che l’interrupt avvenga
-}
+
 
 // Funzione di deep sleep
 void deepSleep() {
@@ -396,29 +318,9 @@ void deepSleep() {
   lcdOn();
 }
 
-void printState(GameState gameState) {
-  switch (gameState)
-  {
-  case GameState::BEGIN:
-    Serial.println("Game State: BEGIN");
-    break;
-  
-    case GameState::PLAY:
-    Serial.println("Game State: PLAY");
-    break;
-
-    case GameState::SLEEP:
-    Serial.println("Game State: SLEEP");
-    break;
-
-  default:
-    break;
-  }
-};
-
 
 // helper per spegnere tutti i LED
-static inline void turnOffAllLeds() {
+inline void turnOffAllLeds() {
   analogWrite(LS, 0);     // se stava usando PWM
   digitalWrite(LS, LOW);
   digitalWrite(L1, LOW);
@@ -435,23 +337,4 @@ void lcdOn() {
 void lcdOff() {
   lcd.noDisplay();
   lcd.noBacklight();
-}
-
-String gen1234Str() {
-  uint8_t a[4] = {1, 2, 3, 4};
-
-  // Fisher–Yates shuffle
-  for (int i = 3; i > 0; --i) {
-    int j = random(i + 1); // 0..i
-    uint8_t t = a[i]; a[i] = a[j]; a[j] = t;
-  }
-
-  char buf[5];
-  buf[0] = '0' + a[0];
-  buf[1] = '0' + a[1];
-  buf[2] = '0' + a[2];
-  buf[3] = '0' + a[3];
-  buf[4] = '\0';
-
-  return String(buf);
 }
