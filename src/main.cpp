@@ -51,7 +51,7 @@ volatile bool tick       = false; // set da ISR → gestito nel loop
 volatile bool woke = false;  // opzionale, per sapere se c'è stato un wake
 
 unsigned long lastTimer = 0;
-
+String sequenza = "";
 
 /*************************************************
 ******************    SETUP   ********************
@@ -113,6 +113,18 @@ void loop() {
 
     case GameState::PLAY:
     fadeOff(LS, lsIsOn);
+    if (sequenza == "") {
+      sequenza = gen1234Str();
+    }
+    Serial.println(sequenza);
+    printLCD(lcd, "Sequenza", sequenza);
+
+    if (timer(lastTimer, 10'000UL, true)) {
+      sequenza = "";
+      lastTimer = 0;
+      gameState = GameState::GAME_OVER;
+    }
+
     break;
 
 
@@ -123,7 +135,11 @@ void loop() {
     deepSleep();
     gameState = GameState::BEGIN;
     break;
-  
+    
+    case GameState::GAME_OVER:
+        printLCD(lcd, "Hai perso");
+    break;
+
   default:
     break;
   }
@@ -131,11 +147,13 @@ void loop() {
 
   b1_state = digitalRead(BTN1);
   if (b1_state == HIGH) {
+    if (gameState == GameState::BEGIN) lastTimer = 0; // reset timer inattivita'
     digitalWrite(L1, HIGH);
-    gameState = GameState::BEGIN;
     Serial.println("BTN1");
     Serial.print("Livello partita: ");
     Serial.println(getLevel(POT_PIN));
+
+    gameState = GameState::PLAY;
   } else {
     digitalWrite(L1, LOW);
     
@@ -154,7 +172,6 @@ void loop() {
   if (b3_state == HIGH) {
     digitalWrite(L3, HIGH);
     Serial.println("BTN3");
-    gameState = GameState::SLEEP;
   } else {
     digitalWrite(L3, LOW);
   }
@@ -162,13 +179,7 @@ void loop() {
   b4_state = digitalRead(BTN4);
   if (b4_state == HIGH) {
     digitalWrite(L4, HIGH);
-    // gameState = GameState::BEGIN;
     Serial.println("BTN4");
-    String sequenza = gen1234Str();
-    Serial.println(sequenza);
-    printLCD(lcd, "Sequenza", sequenza);
-    delay(30);
-    gameState = GameState::PLAY;
   } else {
     digitalWrite(L4, LOW);
   }

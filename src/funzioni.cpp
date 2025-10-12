@@ -2,7 +2,7 @@
 
 
 // Stampa sullo schermo LCD senza clear()
-void printLCD(LiquidCrystal_I2C lcd, String riga1, String riga2) {
+void printLCD(LiquidCrystal_I2C lcd, String riga1, String riga2 = "") {
     const unsigned int maxLcdLen = 16;
     char c;
     uint32_t now = millis();

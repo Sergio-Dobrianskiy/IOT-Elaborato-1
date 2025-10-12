@@ -12,10 +12,10 @@ enum class GameState {
     BEGIN = 1,
     PLAY,
     SLEEP,
-GAME_OVER
+    GAME_OVER
 };
 
-void printLCD(LiquidCrystal_I2C lcd, String riga1, String riga2);
+void printLCD(LiquidCrystal_I2C lcd, String riga1, String riga2 = "");
 void blinky();
 void blinkOn(boolean& lson);
 void blinkOff(int led, boolean& lson);
