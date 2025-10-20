@@ -31,8 +31,8 @@ inline void turnOffAllLeds();
 String gen1234Str();
 int getLevel(int potPin);
 bool timer(unsigned long& last, unsigned long interval, bool debug=false);
-void lcdOn(LiquidCrystal_I2C lcd);
-void lcdOff(LiquidCrystal_I2C lcd);
+void lcdOn(LiquidCrystal_I2C& lcd);
+void lcdOff(LiquidCrystal_I2C& lcd);
 
 
 

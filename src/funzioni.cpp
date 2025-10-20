@@ -124,12 +124,12 @@ bool timer(unsigned long& last, unsigned long interval, bool debug) {
     return false;
 }
 
-void lcdOn(LiquidCrystal_I2C lcd) {
+void lcdOn(LiquidCrystal_I2C& lcd) {
     lcd.init();
     lcd.backlight();
 }
 
-void lcdOff(LiquidCrystal_I2C lcd) {
+void lcdOff(LiquidCrystal_I2C& lcd) {
     lcd.noDisplay();
     lcd.noBacklight();
 }
