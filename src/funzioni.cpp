@@ -2,7 +2,7 @@
 
 
 // Stampa sullo schermo LCD senza clear()
-void printLCD(LiquidCrystal_I2C lcd, String riga1, String riga2 = "") {
+void printLCD(LiquidCrystal_I2C lcd, String riga1, String riga2) {
     const unsigned int maxLcdLen = 16;
     char c;
     uint32_t now = millis();
@@ -96,8 +96,8 @@ int getLevel(int potPin) {
 }
 
 
-// true se sono passati x secondi
-bool timer(unsigned long& last, unsigned long interval, bool debug=false) {
+// true se sono passati x secondi, quando sono passati resetta last
+bool timer(unsigned long& last, unsigned long interval, bool debug) {
     unsigned long now = millis();
     unsigned long elapsed = (last == 0) ? 0UL : (now - last);
 
@@ -122,4 +122,14 @@ bool timer(unsigned long& last, unsigned long interval, bool debug=false) {
         return true;
     }
     return false;
+}
+
+void lcdOn(LiquidCrystal_I2C lcd) {
+    lcd.init();
+    lcd.backlight();
+}
+
+void lcdOff(LiquidCrystal_I2C lcd) {
+    lcd.noDisplay();
+    lcd.noBacklight();
 }

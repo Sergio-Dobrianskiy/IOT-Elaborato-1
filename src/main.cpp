@@ -60,7 +60,7 @@ String sequenza = "";
 void setup() {
   Serial.begin(9600);
 
-  lcdOn();
+  lcdOn(lcd);
   
 
   // init Led
@@ -137,7 +137,7 @@ void loop() {
     break;
     
     case GameState::GAME_OVER:
-        printLCD(lcd, "Hai perso");
+        printLCD(lcd, "Hai perso", "");
     break;
 
   default:
@@ -294,7 +294,7 @@ void deepSleep() {
   // *** SPEGNI USCITE ***
   turnOffAllLeds();
   // *** SPEGNI LCD *** (fallo PRIMA di spegnere TWI/I2C)
-  lcdOff();
+  lcdOff(lcd);
   
 
   // disattiva periferiche
@@ -331,7 +331,7 @@ void deepSleep() {
   // anti-rientro: attendi rilascio BTN1 se ancora basso
   delay(30);
   while (digitalRead(BTN1) == LOW) { /* wait */ }
-  lcdOn();
+  lcdOn(lcd);
 }
 
 
@@ -345,12 +345,3 @@ inline void turnOffAllLeds() {
   digitalWrite(L4, LOW);
 }
 
-void lcdOn() {
-  lcd.init();
-  lcd.backlight();
-}
-
-void lcdOff() {
-  lcd.noDisplay();
-  lcd.noBacklight();
-}
