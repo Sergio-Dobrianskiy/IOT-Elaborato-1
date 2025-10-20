@@ -91,8 +91,8 @@ void wakeUpISR() {
 }
 
 
-int getLevel(int potPin) {
-    return (int) map(analogRead(potPin), 0, 1023, 1, 5);
+float getDifficulty(int potPin) {
+    return (float) map(analogRead(potPin), 0, 1023, 0, 4);
 }
 
 

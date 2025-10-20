@@ -29,6 +29,8 @@
 #define DEFAULT_GAME_TIMER 10'000UL
 #define timerFactor 0.9
 
+float gameLevel = 0;
+float gameDifficulty;
 unsigned long gameTimer = DEFAULT_GAME_TIMER;
 float remaining;
 GameState gameState;  // dichiarata a livello globale
@@ -130,12 +132,14 @@ void loop() {
         fadeOff(LS, lsIsOn);
         if (sequenza == "") {
             sequenza = gen1234Str();
+            gameTimer = (DEFAULT_GAME_TIMER * (pow(timerFactor, (gameLevel + gameDifficulty)))); // lvl e diff partono entrambi da 0
         }
         // Serial.println(sequenza);
         
         if (timer(lastTimer, gameTimer, MENU_DEBUG)) {
             sequenza = "";
             lastTimer = 0;
+            gameLevel = 1;
             gameState = GameState::GAME_OVER;
         }
         
@@ -178,6 +182,8 @@ void loop() {
         
         if (gameState == GameState::BEGIN) {
             lastTimer = 0; // reset timer inattivita'
+            gameDifficulty = getDifficulty(POT_PIN);
+            Serial.println("DIFF " + String(gameDifficulty));
             gameState = GameState::PLAY;
         } else if (gameState == GameState::PLAY) {
             // fai cose
