@@ -136,6 +136,7 @@ void loop() {
         if (sequenza == "") {
             sequenza = gen1234Str();
             gameTimer = (DEFAULT_GAME_TIMER * (pow(timerFactor, (gameLevel + gameDifficulty)))); // lvl e diff partono entrambi da 0
+            lastTimer = 0;
         }
         // Serial.println(sequenza);
         
@@ -249,7 +250,7 @@ void loop() {
 ******************  FUNZIONI  ********************
 *************************************************/
 
-bool checkSequence(String& sequenza, int& sequenceIndex, int input, float gameLevel) {
+bool checkSequence(String& sequenza, int& sequenceIndex, int input, float& gameLevel) {
     delay(40);
     if ( sequenza[sequenceIndex] == ('0' + input)) { // converte int in char
         sequenceIndex++;
