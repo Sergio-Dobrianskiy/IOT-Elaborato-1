@@ -22,18 +22,21 @@
 #define POT_PIN A0
 
 // DEBUG
-#define MENU_DEBUG true
+#define MENU_DEBUG false
 
 // TIMER
 #define DEFAULT_MENU_TIMER 10'000UL // sintassi 10'000UL permessa da C++14/17
 #define DEFAULT_GAME_TIMER 10'000UL
+#define DEFAULT_GAME_OVER_TIMER 2'000UL
 #define timerFactor 0.9
 
 float gameLevel = 0;
 float gameDifficulty;
 unsigned long gameTimer = DEFAULT_GAME_TIMER;
 float remaining;
-GameState gameState;  // dichiarata a livello globale
+GameState gameState; 
+int sequenceIndex = 0;
+
 
 /* Wiring: SDA => A4, SCL => A5 */
 /* I2C address of the LCD: 0x27 */
@@ -119,7 +122,7 @@ void loop() {
         fadeOn(lsIsOn);
         applyFadeIfNeeded();
 
-        if (timer(lastTimer, DEFAULT_MENU_TIMER, true)) { 
+        if (timer(lastTimer, DEFAULT_MENU_TIMER, MENU_DEBUG)) { 
             gameState = GameState::SLEEP;
         }
         
@@ -145,7 +148,6 @@ void loop() {
         
         remaining  = (gameTimer - (millis() - lastTimer)) / 1000.0;
         
-        Serial.println(String(remaining));
         if (remaining >= 0 && remaining < 100)
             printLCD(lcd, "Sequenza " + String(sequenza), String(remaining, 1) + "s");
         break;
@@ -164,7 +166,7 @@ void loop() {
         case GameState::GAME_OVER:
             printLCD(lcd, "Hai perso", "");
             digitalWrite(LS, HIGH);
-            if (timer(lastTimer, 2'000UL, MENU_DEBUG)) {
+            if (timer(lastTimer, DEFAULT_GAME_OVER_TIMER, MENU_DEBUG)) {
                 lastTimer = 0;
                 gameState = GameState::BEGIN;
         }
@@ -177,6 +179,7 @@ void loop() {
     // BTN1 
     b1_state = digitalRead(BTN1);
     if (b1_state == HIGH) {
+        delay(70);
         digitalWrite(L1, HIGH);
         Serial.println("BTN1");
         
@@ -185,8 +188,11 @@ void loop() {
             gameDifficulty = getDifficulty(POT_PIN);
             Serial.println("DIFF " + String(gameDifficulty));
             gameState = GameState::PLAY;
+            delay(100);
         } else if (gameState == GameState::PLAY) {
-            // fai cose
+            if ( ! checkSequence(sequenza, sequenceIndex, 1, gameLevel)) {
+                gameState = GameState::GAME_OVER;
+            }
         }
     } else {
         digitalWrite(L1, LOW);
@@ -195,10 +201,14 @@ void loop() {
     // BTN2
     b2_state = digitalRead(BTN2);
     if (b2_state == HIGH) {
+        delay(70);
         digitalWrite(L2, HIGH);
         Serial.println("BTN2");
         if (gameState == GameState::PLAY) {
-            // fai cose
+            if ( ! checkSequence(sequenza, sequenceIndex, 2, gameLevel)) {
+                
+                gameState = GameState::GAME_OVER;
+            }
         }
     } else {
         digitalWrite(L2, LOW);
@@ -207,10 +217,13 @@ void loop() {
     // BTN3
     b3_state = digitalRead(BTN3);
     if (b3_state == HIGH) {
+        delay(70);
         digitalWrite(L3, HIGH);
         Serial.println("BTN3");
         if (gameState == GameState::PLAY) {
-            // fai cose
+            if ( ! checkSequence(sequenza, sequenceIndex, 3, gameLevel)) {
+                gameState = GameState::GAME_OVER;
+            }
         }
     } else {
         digitalWrite(L3, LOW);
@@ -219,10 +232,13 @@ void loop() {
     // BTN4
     b4_state = digitalRead(BTN4);
     if (b4_state == HIGH) {
+        delay(70);
         digitalWrite(L4, HIGH);
         Serial.println("BTN4");
         if (gameState == GameState::PLAY) {
-            // fai cose
+            if ( ! checkSequence(sequenza, sequenceIndex, 4, gameLevel)) {
+                gameState = GameState::GAME_OVER;
+            }
         }
     } else {
         digitalWrite(L4, LOW);
@@ -232,6 +248,33 @@ void loop() {
 /*************************************************
 ******************  FUNZIONI  ********************
 *************************************************/
+
+bool checkSequence(String& sequenza, int& sequenceIndex, int input, float gameLevel) {
+    delay(40);
+    if ( sequenza[sequenceIndex] == ('0' + input)) { // converte int in char
+        sequenceIndex++;
+        if (sequenceIndex == 4) {
+            sequenceIndex = 0;
+            sequenza = "";
+            gameLevel++;
+        }
+        Serial.println("giusto");
+        return true;
+    } else {
+        sequenceIndex = 0;
+        sequenza = "";
+        gameLevel = 0;
+        Serial.println("errore");
+        return false;
+    }
+}
+
+
+
+
+
+
+
 
 // controlla blink led rosso
 void blinky() {
@@ -316,7 +359,7 @@ void lightSleep(void) {
 void deepSleep() {
     // BTN1 ha già INPUT_PULLUP impostato in setup()
     // se il pulsante wake è premuto (LOW), aspetta il rilascio prima di dormire
-    if (digitalRead(BTN1) == LOW) {
+    if (digitalRead(BTN1) == LOW) { // TODO ci deve andare HIGH
         Serial.println("BTN1 premuto");
         // while (digitalRead(BTN1) == LOW) { /* wait release */ }
         // delay(20); // piccolo debounce

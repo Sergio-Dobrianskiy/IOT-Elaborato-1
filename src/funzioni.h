@@ -33,7 +33,7 @@ float getDifficulty(int potPin);
 bool timer(unsigned long& last, unsigned long interval, bool debug=false);
 void lcdOn(LiquidCrystal_I2C& lcd);
 void lcdOff(LiquidCrystal_I2C& lcd);
-
+bool checkSequence(String& sequenza, int& sequenceIndex, int input, float gameLevel);
 
 
 
