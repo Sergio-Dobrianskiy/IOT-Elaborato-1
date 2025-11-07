@@ -92,9 +92,7 @@ void setup() {
     pinMode(BTN4, INPUT);
     pinMode(BTN3, INPUT);
     pinMode(BTN2, INPUT);
-    // pinMode(BTN1, INPUT);
-    pinMode(BTN1, INPUT_PULLUP);  // <--- NUOVO
-    
+    pinMode(BTN1, INPUT);
 
     currIntensity = 0;
     fadeAmount = 20;
@@ -285,18 +283,9 @@ void fadeOn(boolean &lsIsOn) {
 
 // Funzione di deep sleep
 void deepSleep() {
-    // BTN1 ha già INPUT_PULLUP impostato in setup()
-    // se il pulsante wake è premuto (LOW), aspetta il rilascio prima di dormire
-    if (digitalRead(BTN1) == LOW) { // TODO ci deve andare HIGH
-        Serial.println("BTN1 premuto");
-        // while (digitalRead(BTN1) == LOW) { /* wait release */ }
-        // delay(20); // piccolo debounce
-    }
-
     // ferma l’eventuale fade/Timer1 prima di spegnere i timer
     Timer1.detachInterrupt();
     fadeActive = false;
-
 
     // *** SPEGNI USCITE ***
     turnOffAllLeds();
@@ -318,14 +307,11 @@ void deepSleep() {
 
     // wake su livello LOW di INT0 (D2/BTN1)
     attachInterrupt(digitalPinToInterrupt(BTN1), wakeUpISR, LOW);
-
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-
     noInterrupts();
     sleep_enable();
     sleep_bod_disable();   // consumi minimi
     interrupts();
-
     sleep_cpu();           // --- qui dorme davvero ---
 
     // al risveglio
