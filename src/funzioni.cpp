@@ -97,18 +97,10 @@ float getDifficulty(int potPin) {
 
 
 // true se sono passati x secondi, quando sono passati resetta last
-bool timer(unsigned long& last, unsigned long interval, bool debug) {
+bool timer(unsigned long& last, unsigned long interval) {
     unsigned long now = millis();
     unsigned long elapsed = (last == 0) ? 0UL : (now - last);
 
-
-    if (debug) {
-        Serial.print(F("[timer] elapsed="));
-        Serial.print(elapsed);
-        Serial.print(F(" ms / target="));
-        Serial.print(interval);
-        Serial.println(F(" ms"));
-    }
     // Prima chiamata: armo il timer e non scatto subito
     if (last == 0) { 
         last = now; 
@@ -118,7 +110,6 @@ bool timer(unsigned long& last, unsigned long interval, bool debug) {
     // Controllo
     if (now - last >= interval) {
         last = 0;
-        if (debug) Serial.println(F("[timer] TRIGGER"));
         return true;
     }
     return false;
@@ -148,7 +139,7 @@ bool checkSequence(String& sequenza, int& sequenceIndex, int input, float& gameL
     } else {
         sequenceIndex = 0;
         sequenza = "";
-        gameLevel = 0;
+        // gameLevel = 0; // mi serve fuori per il print punteggio 
         Serial.println("errore");
         return false;
     }

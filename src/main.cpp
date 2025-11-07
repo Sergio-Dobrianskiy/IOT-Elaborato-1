@@ -21,18 +21,17 @@
 // POTENZIOMETRO
 #define POT_PIN A0
 
-// DEBUG
-#define MENU_DEBUG false
 
 // TIMER
-#define DEFAULT_MENU_TIMER 10'000UL // sintassi 10'000UL permessa da C++14/17
-#define DEFAULT_GAME_TIMER 10'000UL
-#define DEFAULT_GAME_OVER_TIMER 2'000UL
+#define MENU_TIMER 10'000UL // sintassi 10'000UL permessa da C++14/17
+#define GAME_TIMER 10'000UL
+#define GAME_OVER_TIMER 2'000UL
+#define SCORE_TIMER 2'000UL
 #define timerFactor 0.9             // moltiplicatore difficoltà
 
 float gameLevel = 0;
 float gameDifficulty;
-unsigned long gameTimer = DEFAULT_GAME_TIMER;
+unsigned long gameTimer = GAME_TIMER;
 float remaining;
 GameState gameState; 
 int sequenceIndex = 0;
@@ -67,7 +66,7 @@ volatile bool woke = false;  // opzionale, per sapere se c'è stato un wake
 
 unsigned long lastTimer = 0;
 String sequenza = "";
-
+String gameScore;
 
 /*************************************************
 ******************    SETUP   ********************
@@ -119,59 +118,69 @@ void loop() {
         fadeOn(lsIsOn);
         applyFadeIfNeeded(LS, fadeValue, tick);
 
-        if (timer(lastTimer, DEFAULT_MENU_TIMER, MENU_DEBUG)) { 
+        if (timer(lastTimer, MENU_TIMER)) { 
             gameState = GameState::SLEEP;
         }
         
         break;
 
-        // ****************
-        // ***** PLAY *****
-        // ****************
-        case GameState::PLAY: 
-        fadeOff(LS, lsIsOn, fadeActive);
-        if (sequenza == "") {
-            sequenza = gen1234Str();
-            gameTimer = (DEFAULT_GAME_TIMER * (pow(timerFactor, (gameLevel + gameDifficulty)))); // lvl e diff partono entrambi da 0
-            lastTimer = 0;
+    // ****************
+    // ***** PLAY *****
+    // ****************
+    case GameState::PLAY: 
+    fadeOff(LS, lsIsOn, fadeActive);
+    if (sequenza == "") {
+        if (gameLevel != 0) {
+            turnOffAllLeds();
+            gameScore = String( (gameLevel + gameDifficulty), 0);
+            // while( ! timer(lastTimer, SCORE_TIMER) ){
+            //     printLCD(lcd, "GOOD!", "Score: " + gameScore);
+            // }
+            printLCD(lcd, "GOOD!", "Score: " + gameScore);
+            delay(SCORE_TIMER);
         }
+        sequenza = gen1234Str();
+        gameTimer = (GAME_TIMER * (pow(timerFactor, (gameLevel + gameDifficulty)))); // lvl e diff partono entrambi da 0
+        lastTimer = 0;
+    }
+    
+    if (timer(lastTimer, gameTimer)) {
         
-        if (timer(lastTimer, gameTimer, MENU_DEBUG)) {
+        gameState = GameState::GAME_OVER;
+    }
+    
+    remaining  = (gameTimer - (millis() - lastTimer)) / 1000.0;
+    
+    if (remaining >= 0 && remaining < 100)
+        printLCD(lcd, "Sequenza " + String(sequenza), String(remaining, 1) + "s");
+    break;
+
+    // ****************
+    // ***** SLEEP ****
+    // ****************
+    case GameState::SLEEP:
+    Serial.println("GOING TO SLEEP");
+    fadeOff(LS, lsIsOn, fadeActive);
+    Serial.flush();
+    deepSleep();
+    gameState = GameState::BEGIN;
+    break;
+    
+
+    // ****************
+    // *** GAME OVER **
+    // ****************
+    case GameState::GAME_OVER:
+        gameScore = String( (gameLevel + gameDifficulty), 0);
+        printLCD(lcd, "Hai perso", "Score: " + gameScore);
+        digitalWrite(LS, HIGH);
+        if (timer(lastTimer, GAME_OVER_TIMER)) {
+            lastTimer = 0;
             sequenza = "";
-            lastTimer = 0;
-            gameLevel = 1;
-            gameState = GameState::GAME_OVER;
-        }
-        
-        remaining  = (gameTimer - (millis() - lastTimer)) / 1000.0;
-        
-        if (remaining >= 0 && remaining < 100)
-            printLCD(lcd, "Sequenza " + String(sequenza), String(remaining, 1) + "s");
-        break;
-
-        // ****************
-        // ***** SLEEP ****
-        // ****************
-        case GameState::SLEEP:
-        Serial.println("GOING TO SLEEP");
-        fadeOff(LS, lsIsOn, fadeActive);
-        Serial.flush();
-        deepSleep();
-        gameState = GameState::BEGIN;
-        break;
-        
-
-        // ****************
-        // *** GAME OVER **
-        // ****************
-        case GameState::GAME_OVER:
-            printLCD(lcd, "Hai perso", "");
-            digitalWrite(LS, HIGH);
-            if (timer(lastTimer, DEFAULT_GAME_OVER_TIMER, MENU_DEBUG)) {
-                lastTimer = 0;
-                gameState = GameState::BEGIN;
-        }
-        break;
+            gameLevel = 0;
+            gameState = GameState::BEGIN;
+    }
+    break;
 
     default:
         break;
