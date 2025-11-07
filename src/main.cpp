@@ -28,7 +28,7 @@
 #define DEFAULT_MENU_TIMER 10'000UL // sintassi 10'000UL permessa da C++14/17
 #define DEFAULT_GAME_TIMER 10'000UL
 #define DEFAULT_GAME_OVER_TIMER 2'000UL
-#define timerFactor 0.9
+#define timerFactor 0.9             // moltiplicatore difficoltà
 
 float gameLevel = 0;
 float gameDifficulty;
@@ -112,7 +112,6 @@ void setup() {
 *************************************************/
 
 void loop() {
-    // printState(gameState);  
     switch (gameState) {
     case GameState::BEGIN:
         printLCD(lcd, "Welcome to TOS!", "Press B1 to Start");
@@ -136,7 +135,6 @@ void loop() {
             gameTimer = (DEFAULT_GAME_TIMER * (pow(timerFactor, (gameLevel + gameDifficulty)))); // lvl e diff partono entrambi da 0
             lastTimer = 0;
         }
-        // Serial.println(sequenza);
         
         if (timer(lastTimer, gameTimer, MENU_DEBUG)) {
             sequenza = "";
@@ -151,9 +149,9 @@ void loop() {
             printLCD(lcd, "Sequenza " + String(sequenza), String(remaining, 1) + "s");
         break;
 
-
-
-
+        // ****************
+        // ***** SLEEP ****
+        // ****************
         case GameState::SLEEP:
         Serial.println("GOING TO SLEEP");
         fadeOff(LS, lsIsOn, fadeActive);
@@ -162,6 +160,10 @@ void loop() {
         gameState = GameState::BEGIN;
         break;
         
+
+        // ****************
+        // *** GAME OVER **
+        // ****************
         case GameState::GAME_OVER:
             printLCD(lcd, "Hai perso", "");
             digitalWrite(LS, HIGH);
@@ -175,6 +177,10 @@ void loop() {
         break;
     }
 
+
+/*************************************************
+*******************  TASTI  *********************
+*************************************************/
     // BTN1 
     b1_state = digitalRead(BTN1);
     if (b1_state == HIGH) {
@@ -190,6 +196,7 @@ void loop() {
             delay(100);
         } else if (gameState == GameState::PLAY) {
             if ( ! checkSequence(sequenza, sequenceIndex, 1, gameLevel)) {
+                lastTimer = 0;
                 gameState = GameState::GAME_OVER;
             }
         }
@@ -205,7 +212,7 @@ void loop() {
         Serial.println("BTN2");
         if (gameState == GameState::PLAY) {
             if ( ! checkSequence(sequenza, sequenceIndex, 2, gameLevel)) {
-                
+                lastTimer = 0;
                 gameState = GameState::GAME_OVER;
             }
         }
@@ -221,6 +228,7 @@ void loop() {
         Serial.println("BTN3");
         if (gameState == GameState::PLAY) {
             if ( ! checkSequence(sequenza, sequenceIndex, 3, gameLevel)) {
+                lastTimer = 0;
                 gameState = GameState::GAME_OVER;
             }
         }
@@ -236,6 +244,7 @@ void loop() {
         Serial.println("BTN4");
         if (gameState == GameState::PLAY) {
             if ( ! checkSequence(sequenza, sequenceIndex, 4, gameLevel)) {
+                lastTimer = 0;
                 gameState = GameState::GAME_OVER;
             }
         }
