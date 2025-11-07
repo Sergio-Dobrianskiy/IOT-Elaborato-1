@@ -133,3 +133,48 @@ void lcdOff(LiquidCrystal_I2C& lcd) {
     lcd.noDisplay();
     lcd.noBacklight();
 }
+
+bool checkSequence(String& sequenza, int& sequenceIndex, int input, float& gameLevel) {
+    delay(40);
+    if ( sequenza[sequenceIndex] == ('0' + input)) { // converte int in char
+        sequenceIndex++;
+        if (sequenceIndex == 4) {
+            sequenceIndex = 0;
+            sequenza = "";
+            gameLevel++;
+        }
+        Serial.println("giusto");
+        return true;
+    } else {
+        sequenceIndex = 0;
+        sequenza = "";
+        gameLevel = 0;
+        Serial.println("errore");
+        return false;
+    }
+}
+
+// Aggiornamento PWM fuori dall'ISR
+void applyFadeIfNeeded(int led, int fadeValue, volatile bool& tick) {
+    if (tick) {
+        tick = false;
+        // cast a variabile locale per evitare letture "spezzate" di volatile
+        int v = fadeValue;
+        
+        // Curva quadratica (più morbida per l’occhio)
+        int curved = (v * v) / 255;  
+        analogWrite(led, curved);
+    }
+}
+
+
+// Ferma il fade e spegne il LED
+void fadeOff(int led, boolean &lsIsOn, volatile bool& fadeActive) {
+    if (lsIsOn) {
+        lsIsOn = false;
+        fadeActive = false;
+        Timer1.detachInterrupt();
+        analogWrite(led, 0);          // LED off
+        digitalWrite(led, LOW);
+    }
+}

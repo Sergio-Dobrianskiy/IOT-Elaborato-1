@@ -16,14 +16,12 @@ enum class GameState {
 };
 
 void printLCD(LiquidCrystal_I2C lcd, String riga1, String riga2 = "");
-void blinky();
 void blinkOn(boolean& lson);
 void blinkOff(int led, boolean& lson);
-void fadeOff(int led, boolean &lson);
+void fadeOff(int led, boolean &lsIsOn, volatile bool& fadeActive);
 void fadeISR();
-void applyFadeIfNeeded();
+void applyFadeIfNeeded(int led, int fadeValue, volatile bool& tick);
 void fadeOn(boolean &lson);
-void lightSleep();
 void wakeUpISR();
 void deepSleep();
 void printState(GameState gameState);
@@ -34,7 +32,7 @@ bool timer(unsigned long& last, unsigned long interval, bool debug=false);
 void lcdOn(LiquidCrystal_I2C& lcd);
 void lcdOff(LiquidCrystal_I2C& lcd);
 bool checkSequence(String& sequenza, int& sequenceIndex, int input, float& gameLevel);
-
+void blinky();
 
 
 

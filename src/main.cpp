@@ -120,7 +120,7 @@ void loop() {
         printLCD(lcd, "Welcome to TOS!", "Press B1 to Start");
         // Avvia lampeggio su LS (solo la prima volta)
         fadeOn(lsIsOn);
-        applyFadeIfNeeded();
+        applyFadeIfNeeded(LS, fadeValue, tick);
 
         if (timer(lastTimer, DEFAULT_MENU_TIMER, MENU_DEBUG)) { 
             gameState = GameState::SLEEP;
@@ -132,7 +132,7 @@ void loop() {
         // ***** PLAY *****
         // ****************
         case GameState::PLAY: 
-        fadeOff(LS, lsIsOn);
+        fadeOff(LS, lsIsOn, fadeActive);
         if (sequenza == "") {
             sequenza = gen1234Str();
             gameTimer = (DEFAULT_GAME_TIMER * (pow(timerFactor, (gameLevel + gameDifficulty)))); // lvl e diff partono entrambi da 0
@@ -158,7 +158,7 @@ void loop() {
 
         case GameState::SLEEP:
         Serial.println("GOING TO SLEEP");
-        fadeOff(LS, lsIsOn);
+        fadeOff(LS, lsIsOn, fadeActive);
         Serial.flush();
         deepSleep();
         gameState = GameState::BEGIN;
@@ -250,40 +250,6 @@ void loop() {
 ******************  FUNZIONI  ********************
 *************************************************/
 
-bool checkSequence(String& sequenza, int& sequenceIndex, int input, float& gameLevel) {
-    delay(40);
-    if ( sequenza[sequenceIndex] == ('0' + input)) { // converte int in char
-        sequenceIndex++;
-        if (sequenceIndex == 4) {
-            sequenceIndex = 0;
-            sequenza = "";
-            gameLevel++;
-        }
-        Serial.println("giusto");
-        return true;
-    } else {
-        sequenceIndex = 0;
-        sequenza = "";
-        gameLevel = 0;
-        Serial.println("errore");
-        return false;
-    }
-}
-
-
-
-
-
-
-
-
-// controlla blink led rosso
-void blinky() {
-    flagState = !flagState;
-    digitalWrite(LS, flagState ? HIGH : LOW);
-}
-
-
 // ISR chiamata dal Timer1 a intervalli regolari
 void fadeISR() {
     if (!fadeActive) return;
@@ -299,18 +265,7 @@ void fadeISR() {
     tick = true; // segnala al loop di aggiornare il PWM
 }
 
-// Aggiornamento PWM fuori dall'ISR
-void applyFadeIfNeeded() {
-    if (tick) {
-        tick = false;
-        // cast a variabile locale per evitare letture "spezzate" di volatile
-        int v = fadeValue;
-        
-        // Curva quadratica (più morbida per l’occhio)
-        int curved = (v * v) / 255;  
-        analogWrite(LS, curved);
-    }
-}
+
 
 // Accende il fade
 void fadeOn(boolean &lsIsOn) {
@@ -327,34 +282,6 @@ void fadeOn(boolean &lsIsOn) {
         Timer1.attachInterrupt(fadeISR);
     }
 }
-
-// Ferma il fade e spegne il LED
-void fadeOff(int led, boolean &lsIsOn) {
-    if (lsIsOn) {
-        lsIsOn = false;
-        fadeActive = false;
-        Timer1.detachInterrupt();
-        analogWrite(led, 0);          // LED off
-        digitalWrite(led, LOW);
-    }
-}
-
-void lightSleep(void) {
-    set_sleep_mode(SLEEP_MODE_IDLE);
-    sleep_enable();
-    power_adc_disable();
-    power_spi_disable();
-    power_timer0_disable();
-    power_timer1_disable();
-    power_timer2_disable();
-    power_twi_disable();
-    sleep_mode();
-    /* back */
-    sleep_disable();
-    power_all_enable();
-}
-
-
 
 // Funzione di deep sleep
 void deepSleep() {
@@ -375,7 +302,6 @@ void deepSleep() {
     turnOffAllLeds();
     // *** SPEGNI LCD *** (fallo PRIMA di spegnere TWI/I2C)
     lcdOff(lcd);
-    
 
     // disattiva periferiche
     power_adc_disable();
@@ -406,7 +332,6 @@ void deepSleep() {
     sleep_disable();
     detachInterrupt(digitalPinToInterrupt(BTN1));
     power_all_enable();
-    
 
     // anti-rientro: attendi rilascio BTN1 se ancora basso
     delay(30);
@@ -417,6 +342,8 @@ void deepSleep() {
 
 // helper per spegnere tutti i LED
 inline void turnOffAllLeds() {
+    // inline suggerisce al compilatore di sostituire le chiamate alla funzione 
+    // con il suo codice diretto (inlining), per velocità e meno overhead.
     analogWrite(LS, 0);     // se stava usando PWM
     digitalWrite(LS, LOW);
     digitalWrite(L1, LOW);
@@ -425,3 +352,8 @@ inline void turnOffAllLeds() {
     digitalWrite(L4, LOW);
 }
 
+// controlla blink led rosso
+void blinky() {
+    flagState = !flagState;
+    digitalWrite(LS, flagState ? HIGH : LOW);
+}
